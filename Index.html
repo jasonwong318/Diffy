@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe 萬能 AI 語意對比畫布</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <nav class="bg-slate-900 text-white px-6 py-4 shadow-md flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-2 rounded-lg"><i data-lucide="git-compare" class="w-6 h-6"></i></div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wide">Vibe AI 萬能對比實驗室</h1>
+                <p class="text-xs text-gray-400">Excel / PDF / 合同條款 / 跨格式語意審查</p>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto p-6 space-y-6">
+        
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
+            <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="box" class="text-indigo-600"></i> 通用檔案槽與 AI 指令</h2>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Gemini API Key</label>
+                <input type="password" id="api-key" class="w-full md:w-1/2 p-2 border border-gray-300 rounded-lg text-sm font-mono" placeholder="AIzaSy...">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="border p-4 rounded-lg bg-slate-50">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">文件 A (Excel/PDF/圖片/合同)</label>
+                    <input type="file" id="file-a" class="w-full text-sm text-gray-500">
+                </div>
+                <div class="border p-4 rounded-lg bg-slate-50">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">文件 B (Excel/PDF/圖片/合同)</label>
+                    <input type="file" id="file-b" class="w-full text-sm text-gray-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">AI 比對與審查指令 (Prompt)</label>
+                <textarea id="custom-prompt" rows="3" class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">請幫我交叉比對這兩份文件。如果是財務報表，請找出不匹配的數字與原因；如果是合同，請幫我找出條款上的文字差異、新增或刪除的福利、以及潛在的法律風險漏洞。</textarea>
+            </div>
+
+            <button onclick="runUniversalCompare()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow transition flex items-center justify-center space-x-2">
+                <i data-lucide="sparkles"></i>
+                <span>啟動萬能語意深度審查</span>
+            </button>
+        </div>
+
+        <div id="result-zone" class="hidden space-y-4">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h3 class="font-bold text-lg text-slate-900 mb-4 flex items-center gap-2">
+                    <i data-lucide="file-text" class="text-emerald-600"></i> Gemini AI 深度審查報告 (Markdown 格式)
+                </h3>
+                <div id="report-output" class="prose max-w-none text-gray-700 bg-slate-50 p-6 rounded-lg border border-gray-200 whitespace-pre-wrap leading-relaxed"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // 輔助函數：將任何檔案轉成 Gemini 認識的 Base64 結構
+        const getFileData = (file) => new Promise((resolve) => {
+            const reader = new FileReader();
+            // 如果是 Excel，我們用普通文本讀取或 Base64
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve({
+                mimeType: file.type || "application/octet-stream",
+                base64: reader.result.split(',')[1]
+            });
+        });
+
+        async function runUniversalCompare() {
+            const apiKey = document.getElementById('api-key').value;
+            const fileA = document.getElementById('file-a').files[0];
+            const fileB = document.getElementById('file-b').files[0];
+            const userPrompt = document.getElementById('custom-prompt').value;
+
+            if(!apiKey || !fileA || !fileB) return alert("請填齊 API Key 並上傳兩份文件！");
+
+            document.getElementById('result-zone').classList.remove('hidden');
+            const outputBox = document.getElementById('report-output');
+            outputBox.innerHTML = `<div class='flex items-center gap-2 text-indigo-600'><i data-lucide='loader' class='animate-spin'></i>AI 正在閱讀兩份大文件並進行逐字、逐句、逐額的智慧審查，請稍候...</div>`;
+            lucide.createIcons();
+
+            try {
+                // 同時打包兩份文件
+                const dataA = await getFileData(fileA);
+                const dataB = await getFileData(fileB);
+
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { inlineData: { mimeType: dataA.mimeType, data: dataA.base64 } },
+                            { inlineData: { mimeType: dataB.mimeType, data: dataB.base64 } },
+                            { text: `${userPrompt}\n\n請用繁體中文回答，並條列式、層次分明地列出所有差異點與專業分析。` }
+                        ]
+                    }]
+                };
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const apiData = await res.json();
+                const textReport = apiData.candidates[0].content.parts[0].text;
+                
+                // 直接渲染大腦吐出來的分析報告
+                outputBox.innerText = textReport;
+
+            } catch (err) {
+                outputBox.innerHTML = `<span class='text-red-600'>❌ 發生錯誤: ${err.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
