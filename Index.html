@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -82,7 +83,7 @@
         </div>
         <div class="hidden md:flex items-center gap-1.5 text-xs text-stone-500 bg-stone-800 px-3 py-1.5 rounded-full">
             <i data-lucide="files" class="w-3.5 h-3.5"></i>
-            <span>Excel · PDF · 圖片 · 合同</span>
+            <span>Excel · PDF · Word · 圖片 · 合同</span>
         </div>
     </nav>
 
@@ -324,12 +325,12 @@
         const MODEL_CONFIG = {
             gemini: {
                 label: 'Gemini API Key',
-                note: '原生多模態支援 — Excel、PDF、圖片及文字文件均可直接送入分析',
+                note: '支援 PDF、圖片原生分析；Excel、Word 自動轉換文字後送入',
                 storageKey: 'diffy_gemini_key'
             },
             zhipu: {
                 label: '智譜 API Key',
-                note: '支援 Excel（轉換為文字）及 PDF（提取文字）；圖片格式暫不支援',
+                note: '支援 Excel、Word、PDF（均提取文字後送入）；圖片格式暫不支援',
                 storageKey: 'diffy_zhipu_key'
             }
         };
@@ -433,8 +434,10 @@
 
         function getFileIconName(file) {
             const t = file.type;
+            const n = file.name.toLowerCase();
             if (t.includes('pdf')) return 'file-type-2';
-            if (t.includes('sheet') || t.includes('excel') || file.name.match(/\.xlsx?$/i)) return 'table-2';
+            if (t.includes('sheet') || t.includes('excel') || n.match(/\.xlsx?$/)) return 'table-2';
+            if (t.includes('wordprocessing') || n.match(/\.docx?$/)) return 'file-text';
             if (t.includes('image')) return 'image';
             return 'file-text';
         }
@@ -486,6 +489,16 @@
             });
         }
 
+        async function docxToText(file) {
+            try {
+                const buf = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer: buf });
+                return result.value.trim();
+            } catch {
+                throw new Error(`Word 文件解析失敗（${file.name}），請確認文件格式正確`);
+            }
+        }
+
         async function pdfToText(file) {
             try {
                 const buf = await file.arrayBuffer();
@@ -508,21 +521,52 @@
             if (t.includes('sheet') || t.includes('excel') || n.endsWith('.xlsx') || n.endsWith('.xls')) {
                 return excelToText(file);
             }
+            if (t.includes('wordprocessing') || n.endsWith('.docx') || n.endsWith('.doc')) {
+                return docxToText(file);
+            }
             if (t.includes('pdf')) return pdfToText(file);
             return toText(file);
         }
 
+        // Gemini 原生支援的 MIME 類型（其餘需轉為文字再送入）
+        function isGeminiNative(file) {
+            const t = file.type;
+            const n = file.name.toLowerCase();
+            if (t.includes('image')) return true;
+            if (t.includes('pdf')) return true;
+            if (t.startsWith('text/')) return true;
+            if (t.includes('audio') || t.includes('video')) return true;
+            // xlsx, docx, doc, xls 均不支援
+            return false;
+        }
+
         // ── API Calls ─────────────────────────────────────────────────────────
+        async function filePartForGemini(file) {
+            if (isGeminiNative(file)) {
+                const d = await toBase64(file);
+                return [
+                    { text: `[文件：${file.name}]` },
+                    { inlineData: { mimeType: d.mimeType, data: d.base64 } }
+                ];
+            }
+            // 不支援的格式先提取文字
+            const text = await fileToText(file);
+            return [{ text: `[文件：${file.name}（已轉換為文字）]\n${text}` }];
+        }
+
         async function callGemini(apiKey, fileA, fileB, prompt) {
-            const [dA, dB] = await Promise.all([toBase64(fileA), toBase64(fileB)]);
+            const [partsA, partsB] = await Promise.all([
+                filePartForGemini(fileA),
+                filePartForGemini(fileB)
+            ]);
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
             const body = {
                 contents: [{
                     parts: [
-                        { text: `[文件 A：${dA.name}]` },
-                        { inlineData: { mimeType: dA.mimeType, data: dA.base64 } },
-                        { text: `[文件 B：${dB.name}]` },
-                        { inlineData: { mimeType: dB.mimeType, data: dB.base64 } },
+                        { text: `以下是文件 A（${fileA.name}）：` },
+                        ...partsA,
+                        { text: `以下是文件 B（${fileB.name}）：` },
+                        ...partsB,
                         { text: `${prompt}\n\n請用繁體中文回答，條列式、層次分明地呈現所有差異點與專業分析。` }
                     ]
                 }]
@@ -534,7 +578,7 @@
             return json.candidates[0].content.parts[0].text;
         }
 
-        async function callZhipu(apiKey, fileA, fileB, prompt) {
+        async function callZhipu(apiKey, fileA, fileB, prompt, retry = true) {
             const [tA, tB] = await Promise.all([fileToText(fileA), fileToText(fileB)]);
             const url = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
             const body = {
@@ -550,7 +594,18 @@
                 body: JSON.stringify(body)
             });
             const json = await res.json();
-            if (json.error) throw new Error(`智譜 API 錯誤：${json.error.message}`);
+            // 503 / overloaded：自動重試一次
+            if ((res.status === 503 || json.error?.message?.includes('overloaded')) && retry) {
+                await new Promise(r => setTimeout(r, 3000));
+                return callZhipu(apiKey, fileA, fileB, prompt, false);
+            }
+            if (json.error) {
+                const msg = json.error.message || '';
+                if (msg.includes('overloaded') || msg.includes('temporarily')) {
+                    throw new Error('智譜伺服器目前繁忙，請稍後再試（約 1–2 分鐘後重新提交）');
+                }
+                throw new Error(`智譜 API 錯誤：${msg}`);
+            }
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             return json.choices[0].message.content;
         }
