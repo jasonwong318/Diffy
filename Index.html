@@ -25,7 +25,6 @@
     <style>
         body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #f8f7f5; }
 
-        /* Markdown report styles */
         .prose h1 { font-size: 1.35rem; font-weight: 700; margin: 1.25rem 0 0.6rem; color: #1c1917; border-bottom: 2px solid #f0ede8; padding-bottom: 0.4rem; }
         .prose h2 { font-size: 1.1rem; font-weight: 600; margin: 1.1rem 0 0.5rem; color: #292524; }
         .prose h3 { font-size: 0.975rem; font-weight: 600; margin: 0.9rem 0 0.4rem; color: #44403c; }
@@ -46,31 +45,23 @@
         .prose hr { border: none; border-top: 1px solid #e7e5e4; margin: 1.25rem 0; }
         .prose a { color: #d97706; text-decoration: underline; }
 
-        /* Drag-over state */
         .drag-active { background: #fffbeb !important; border-color: #d97706 !important; }
-
-        /* Spin animation */
         @keyframes spin { to { transform: rotate(360deg); } }
         .animate-spin { animation: spin 0.8s linear infinite; }
-
-        /* Toast transition */
         #toast { transition: opacity 0.3s ease; }
 
-        /* Print styles */
         @media print {
             nav, .no-print { display: none !important; }
             body { background: white; }
             .prose { color: #000; }
         }
 
-        /* Subtle card hover */
         .upload-card { transition: border-color 0.15s, background 0.15s; }
         .upload-card:hover { border-color: #d97706 !important; background: #fffbeb !important; }
     </style>
 </head>
 <body>
 
-    <!-- Navigation -->
     <nav class="bg-stone-900 text-white px-6 py-4 shadow-md flex items-center justify-between sticky top-0 z-40 no-print">
         <div class="flex items-center gap-3">
             <div class="w-9 h-9 bg-amber-600 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -89,7 +80,6 @@
 
     <main class="max-w-4xl mx-auto px-4 py-8 md:px-6 space-y-5">
 
-        <!-- AI Model & API Key -->
         <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-stone-100 flex items-center gap-2.5">
                 <div class="w-7 h-7 bg-amber-50 rounded-lg flex items-center justify-center">
@@ -98,8 +88,6 @@
                 <h2 class="font-semibold text-stone-800 text-sm">AI 模型設置</h2>
             </div>
             <div class="p-6 space-y-5">
-
-                <!-- Model Selector -->
                 <div>
                     <label class="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-2.5">選擇模型</label>
                     <div class="flex flex-wrap gap-2">
@@ -119,8 +107,6 @@
                         <span id="model-note-text"></span>
                     </p>
                 </div>
-
-                <!-- API Key -->
                 <div>
                     <div class="flex items-center justify-between mb-2">
                         <label class="text-xs font-medium text-stone-500 uppercase tracking-wider">
@@ -146,11 +132,9 @@
                     </div>
                     <p class="mt-1.5 text-xs text-stone-400">API Key 僅儲存於本地瀏覽器，不會上傳至任何伺服器</p>
                 </div>
-
             </div>
         </div>
 
-        <!-- File Upload -->
         <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-stone-100 flex items-center gap-2.5">
                 <div class="w-7 h-7 bg-amber-50 rounded-lg flex items-center justify-center">
@@ -160,8 +144,6 @@
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                    <!-- File A -->
                     <label for="file-a"
                         class="upload-card relative flex flex-col items-center justify-center gap-3 p-6 border-2 border-dashed border-stone-200 rounded-2xl bg-stone-50 cursor-pointer min-h-[140px]"
                         id="zone-a"
@@ -188,8 +170,6 @@
                             </div>
                         </div>
                     </label>
-
-                    <!-- File B -->
                     <label for="file-b"
                         class="upload-card relative flex flex-col items-center justify-center gap-3 p-6 border-2 border-dashed border-stone-200 rounded-2xl bg-stone-50 cursor-pointer min-h-[140px]"
                         id="zone-b"
@@ -216,12 +196,10 @@
                             </div>
                         </div>
                     </label>
-
                 </div>
             </div>
         </div>
 
-        <!-- Prompt -->
         <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-stone-100 flex items-center gap-2.5">
                 <div class="w-7 h-7 bg-amber-50 rounded-lg flex items-center justify-center">
@@ -230,31 +208,16 @@
                 <h2 class="font-semibold text-stone-800 text-sm">審查指令</h2>
             </div>
             <div class="p-6 space-y-4">
-                <!-- Preset Chips -->
                 <div class="flex flex-wrap gap-2">
                     <span class="text-xs text-stone-400 self-center mr-1">快捷模板：</span>
-                    <button onclick="setPreset('finance')"
-                        class="px-3 py-1.5 bg-stone-100 hover:bg-amber-100 text-stone-600 hover:text-amber-700 rounded-full text-xs font-medium transition-colors">
-                        💰 財務報表
-                    </button>
-                    <button onclick="setPreset('contract')"
-                        class="px-3 py-1.5 bg-stone-100 hover:bg-amber-100 text-stone-600 hover:text-amber-700 rounded-full text-xs font-medium transition-colors">
-                        📋 合同條款
-                    </button>
-                    <button onclick="setPreset('general')"
-                        class="px-3 py-1.5 bg-stone-100 hover:bg-amber-100 text-stone-600 hover:text-amber-700 rounded-full text-xs font-medium transition-colors">
-                        🔍 通用對比
-                    </button>
-                    <button onclick="setPreset('audit')"
-                        class="px-3 py-1.5 bg-stone-100 hover:bg-amber-100 text-stone-600 hover:text-amber-700 rounded-full text-xs font-medium transition-colors">
-                        🛡️ 風險審計
-                    </button>
+                    <button onclick="setPreset('finance')" class="px-3 py-1.5 bg-stone-100 hover:bg-amber-100 text-stone-600 hover:text-amber-700 rounded-full text-xs font-medium transition-colors">💰 財務報表</button>
+                    <button onclick="setPreset('contract')" class="px-3 py-1.5 bg-stone-100 hover:bg-amber-100 text-stone-600 hover:text-amber-700 rounded-full text-xs font-medium transition-colors">📋 合同條款</button>
+                    <button onclick="setPreset('general')" class="px-3 py-1.5 bg-stone-100 hover:bg-amber-100 text-stone-600 hover:text-amber-700 rounded-full text-xs font-medium transition-colors">🔍 通用對比</button>
+                    <button onclick="setPreset('audit')" class="px-3 py-1.5 bg-stone-100 hover:bg-amber-100 text-stone-600 hover:text-amber-700 rounded-full text-xs font-medium transition-colors">🛡️ 風險審計</button>
                 </div>
-
                 <textarea id="custom-prompt" rows="4"
                     class="w-full px-4 py-3 border border-stone-200 rounded-xl text-sm text-stone-700 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent focus:bg-white resize-none leading-relaxed transition-all"
                     placeholder="輸入審查指令，或選擇上方快捷模板…">請幫我交叉比對這兩份文件。如果是財務報表，請找出不匹配的數字與原因；如果是合同，請幫我找出條款上的文字差異、新增或刪除的福利、以及潛在的法律風險漏洞。</textarea>
-
                 <button onclick="runCompare()" id="run-btn"
                     class="w-full bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-semibold py-3.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm tracking-wide">
                     <i data-lucide="search" class="w-4 h-4"></i>
@@ -263,7 +226,6 @@
             </div>
         </div>
 
-        <!-- Results -->
         <div id="result-zone" class="hidden">
             <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
                 <div class="px-6 py-4 border-b border-stone-100 flex items-center justify-between flex-wrap gap-3">
@@ -274,15 +236,11 @@
                         <h2 class="font-semibold text-stone-800 text-sm">審查報告</h2>
                     </div>
                     <div id="export-buttons" class="hidden gap-2 no-print">
-                        <button onclick="exportToExcel()"
-                            class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 shadow-sm">
-                            <i data-lucide="table-2" class="w-3.5 h-3.5"></i>
-                            匯出 Excel
+                        <button onclick="exportToExcel()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 shadow-sm">
+                            <i data-lucide="table-2" class="w-3.5 h-3.5"></i>匯出 Excel
                         </button>
-                        <button onclick="exportToPDF()"
-                            class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 shadow-sm">
-                            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-                            匯出 PDF
+                        <button onclick="exportToPDF()" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 shadow-sm">
+                            <i data-lucide="printer" class="w-3.5 h-3.5"></i>匯出 PDF
                         </button>
                     </div>
                 </div>
@@ -294,13 +252,11 @@
 
     </main>
 
-    <!-- Footer -->
     <footer class="mt-8 pb-10 text-center text-xs text-stone-400 no-print">
         <p>Diffy &mdash; AI 文件差異審查工具 &nbsp;·&nbsp; API Key 僅儲存於本地瀏覽器，文件內容不經過任何中間伺服器</p>
     </footer>
 
     <script>
-        // ── Init ──────────────────────────────────────────────────────────────
         lucide.createIcons();
         pdfjsLib.GlobalWorkerOptions.workerSrc =
             'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -309,7 +265,6 @@
 
         function safeParse(text) {
             let html = marked.parse(text);
-            // Strip script tags and event handlers from AI-generated output
             html = html
                 .replace(/<script[\s\S]*?<\/script>/gi, '')
                 .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
@@ -334,18 +289,15 @@
         };
 
         const PRESETS = {
-            finance: '請幫我深度交叉比對這兩份財務報表，重點找出：\n1. 數字不一致之處及金額差異（請列出具體科目及金額）\n2. 科目分類的變化\n3. 異常數值或不合理波動\n4. 可能的錯誤或風險跡象\n\n請以表格形式呈現主要差異，並附上說明。',
+            finance: '請幫我深度交叉比對這兩份財務報表，重點找出：\n1. 數字不一致之處及金額差異（請列出具體科目及金額）\n2. 科目分類的變化\n3. 異常數值或不合理波動\n4. 可能的錯誤或風險跡象\n\n請以表格式式呈現主要差異，並附上說明。',
             contract: '請幫我精細比對這兩份合同的條款差異，重點找出：\n1. 新增或刪除的條款\n2. 關鍵條件的文字修改（逐字對比）\n3. 薪酬福利的變化\n4. 責任義務的調整\n5. 潛在的法律風險或不利條款\n\n請標明每項差異的重要程度（高／中／低）。',
             general: '請幫我全面比對這兩份文件的所有差異，包括：\n1. 文字內容的新增、刪除或修改\n2. 數字或資料的變動\n3. 結構與格式的差異\n4. 差異的重要程度分析\n\n請條列式呈現，並說明每項差異的潛在影響。',
             audit: '請以專業審計師的角度，深度審查這兩份文件，重點評估：\n1. 資料一致性與準確性\n2. 潛在的不合規或風險事項\n3. 資訊缺漏或模糊之處\n4. 需要進一步查核的疑點\n5. 整體風險評級及建議\n\n請以正式審計報告格式呈現。'
         };
 
-        // ── Model Selection ───────────────────────────────────────────────────
         function selectModel(model) {
             currentModel = model;
             const cfg = MODEL_CONFIG[model];
-
-            // Update buttons
             document.querySelectorAll('.model-btn').forEach(btn => {
                 btn.classList.remove('border-amber-400', 'bg-amber-50', 'text-amber-700', 'shadow-sm');
                 btn.classList.add('border-stone-200', 'bg-white', 'text-stone-500');
@@ -353,15 +305,11 @@
             const active = document.getElementById(`btn-${model}`);
             active.classList.add('border-amber-400', 'bg-amber-50', 'text-amber-700', 'shadow-sm');
             active.classList.remove('border-stone-200', 'bg-white', 'text-stone-500');
-
             document.getElementById('api-key-label').textContent = cfg.label;
             document.getElementById('model-note-text').textContent = cfg.note;
-
-            // Load stored key
             const saved = localStorage.getItem(cfg.storageKey) || '';
             document.getElementById('api-key').value = saved;
             document.getElementById('key-status').textContent = saved ? '✓ 已載入儲存的 Key' : '';
-
             lucide.createIcons();
         }
 
@@ -386,32 +334,26 @@
             lucide.createIcons();
         }
 
-        // ── Preset Prompts ────────────────────────────────────────────────────
         function setPreset(type) {
             document.getElementById('custom-prompt').value = PRESETS[type];
         }
 
-        // ── File Handling ─────────────────────────────────────────────────────
         function handleDrag(e, slot) {
-            e.preventDefault();
-            e.stopPropagation();
+            e.preventDefault(); e.stopPropagation();
             document.getElementById(`zone-${slot}`).classList.add('drag-active');
         }
 
         function handleDragLeave(e, slot) {
             e.preventDefault();
-            if (!e.currentTarget.contains(e.relatedTarget)) {
+            if (!e.currentTarget.contains(e.relatedTarget))
                 document.getElementById(`zone-${slot}`).classList.remove('drag-active');
-            }
         }
 
         function handleDrop(e, slot) {
-            e.preventDefault();
-            e.stopPropagation();
+            e.preventDefault(); e.stopPropagation();
             document.getElementById(`zone-${slot}`).classList.remove('drag-active');
             const file = e.dataTransfer?.files?.[0];
             if (!file) return;
-            // Assign to hidden input (read-only, so we store it)
             window[`droppedFile${slot.toUpperCase()}`] = file;
             showFileSelected(slot, file);
         }
@@ -425,14 +367,11 @@
         }
 
         function getFile(slot) {
-            const dropped = window[`droppedFile${slot.toUpperCase()}`];
-            const input = document.getElementById(`file-${slot}`).files[0];
-            return dropped || input || null;
+            return window[`droppedFile${slot.toUpperCase()}`] || document.getElementById(`file-${slot}`).files[0] || null;
         }
 
         function getFileIconName(file) {
-            const t = file.type;
-            const n = file.name.toLowerCase();
+            const t = file.type, n = file.name.toLowerCase();
             if (t.includes('pdf')) return 'file-type-2';
             if (t.includes('sheet') || t.includes('excel') || n.match(/\.xlsx?$/)) return 'table-2';
             if (t.includes('wordprocessing') || n.match(/\.docx?$/)) return 'file-text';
@@ -448,16 +387,14 @@
 
         function showFileSelected(slot, file) {
             document.getElementById(`file-${slot}-idle`).classList.add('hidden');
-            const sel = document.getElementById(`file-${slot}-selected`);
-            sel.classList.remove('hidden');
+            document.getElementById(`file-${slot}-selected`).classList.remove('hidden');
             document.getElementById(`name-${slot}`).textContent = file.name;
             document.getElementById(`size-${slot}`).textContent = formatBytes(file.size);
-            const iconEl = document.getElementById(`icon-${slot}`);
-            iconEl.innerHTML = `<i data-lucide="${getFileIconName(file)}" class="w-5 h-5 text-amber-600"></i>`;
+            document.getElementById(`icon-${slot}`).innerHTML =
+                `<i data-lucide="${getFileIconName(file)}" class="w-5 h-5 text-amber-600"></i>`;
             lucide.createIcons();
         }
 
-        // ── File Content Extraction ───────────────────────────────────────────
         const toBase64 = (file) => new Promise(resolve => {
             const r = new FileReader();
             r.readAsDataURL(file);
@@ -478,8 +415,7 @@
                     let out = '';
                     wb.SheetNames.forEach(name => {
                         out += `\n[工作表: ${name}]\n`;
-                        out += XLSX.utils.sheet_to_csv(wb.Sheets[name]);
-                        out += '\n';
+                        out += XLSX.utils.sheet_to_csv(wb.Sheets[name]) + '\n';
                     });
                     resolve(out.trim());
                 };
@@ -489,8 +425,7 @@
 
         async function docxToText(file) {
             try {
-                const buf = await file.arrayBuffer();
-                const result = await mammoth.extractRawText({ arrayBuffer: buf });
+                const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
                 return result.value.trim();
             } catch {
                 throw new Error(`Word 文件解析失敗（${file.name}），請確認文件格式正確`);
@@ -499,12 +434,10 @@
 
         async function pdfToText(file) {
             try {
-                const buf = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+                const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
                 let text = '';
                 for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const content = await page.getTextContent();
+                    const content = await (await pdf.getPage(i)).getTextContent();
                     text += content.items.map(s => s.str).join(' ') + '\n';
                 }
                 return text.trim();
@@ -514,60 +447,36 @@
         }
 
         async function fileToText(file) {
-            const t = file.type;
-            const n = file.name.toLowerCase();
-            if (t.includes('sheet') || t.includes('excel') || n.endsWith('.xlsx') || n.endsWith('.xls')) {
-                return excelToText(file);
-            }
-            if (t.includes('wordprocessing') || n.endsWith('.docx') || n.endsWith('.doc')) {
-                return docxToText(file);
-            }
+            const t = file.type, n = file.name.toLowerCase();
+            if (t.includes('sheet') || t.includes('excel') || n.endsWith('.xlsx') || n.endsWith('.xls')) return excelToText(file);
+            if (t.includes('wordprocessing') || n.endsWith('.docx') || n.endsWith('.doc')) return docxToText(file);
             if (t.includes('pdf')) return pdfToText(file);
             return toText(file);
         }
 
-        // Gemini 原生支援的 MIME 類型（其餘需轉為文字再送入）
         function isGeminiNative(file) {
             const t = file.type;
-            const n = file.name.toLowerCase();
-            if (t.includes('image')) return true;
-            if (t.includes('pdf')) return true;
-            if (t.startsWith('text/')) return true;
-            if (t.includes('audio') || t.includes('video')) return true;
-            // xlsx, docx, doc, xls 均不支援
-            return false;
+            return t.includes('image') || t.includes('pdf') || t.startsWith('text/') || t.includes('audio') || t.includes('video');
         }
 
-        // ── API Calls ─────────────────────────────────────────────────────────
         async function filePartForGemini(file) {
             if (isGeminiNative(file)) {
                 const d = await toBase64(file);
-                return [
-                    { text: `[文件：${file.name}]` },
-                    { inlineData: { mimeType: d.mimeType, data: d.base64 } }
-                ];
+                return [{ text: `[文件：${file.name}]` }, { inlineData: { mimeType: d.mimeType, data: d.base64 } }];
             }
-            // 不支援的格式先提取文字
             const text = await fileToText(file);
             return [{ text: `[文件：${file.name}（已轉換為文字）]\n${text}` }];
         }
 
         async function callGemini(apiKey, fileA, fileB, prompt) {
-            const [partsA, partsB] = await Promise.all([
-                filePartForGemini(fileA),
-                filePartForGemini(fileB)
-            ]);
+            const [partsA, partsB] = await Promise.all([filePartForGemini(fileA), filePartForGemini(fileB)]);
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
             const body = {
-                contents: [{
-                    parts: [
-                        { text: `以下是文件 A（${fileA.name}）：` },
-                        ...partsA,
-                        { text: `以下是文件 B（${fileB.name}）：` },
-                        ...partsB,
-                        { text: `${prompt}\n\n請用繁體中文回答，條列式、層次分明地呈現所有差異點與專業分析。` }
-                    ]
-                }]
+                contents: [{ parts: [
+                    { text: `以下是文件 A（${fileA.name}）：` }, ...partsA,
+                    { text: `以下是文件 B（${fileB.name}）：` }, ...partsB,
+                    { text: `${prompt}\n\n請用繁體中文回答，條列式、層次分明地呈現所有差異點與專業分析。` }
+                ]}]
             };
             const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             const json = await res.json();
@@ -578,47 +487,39 @@
 
         async function callZhipu(apiKey, fileA, fileB, prompt, retry = true) {
             const [tA, tB] = await Promise.all([fileToText(fileA), fileToText(fileB)]);
-            const url = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
             const body = {
                 model: 'glm-4-flash',
-                messages: [{
-                    role: 'user',
-                    content: `請比對以下兩份文件並進行深度審查分析。\n\n【文件 A：${fileA.name}】\n${tA}\n\n【文件 B：${fileB.name}】\n${tB}\n\n${prompt}\n\n請用繁體中文回答，條列式、層次分明地呈現所有差異點與專業分析。`
+                messages: [{ role: 'user', content:
+                    `請比對以下兩份文件並進行深度審查分析。\n\n【文件 A：${fileA.name}】\n${tA}\n\n【文件 B：${fileB.name}】\n${tB}\n\n${prompt}\n\n請用繁體中文回答，條列式、層次分明地呈現所有差異點與專業分析。`
                 }]
             };
-            const res = await fetch(url, {
+            const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
                 body: JSON.stringify(body)
             });
             const json = await res.json();
-            // 503 / overloaded：自動重試一次
             if ((res.status === 503 || json.error?.message?.includes('overloaded')) && retry) {
                 await new Promise(r => setTimeout(r, 3000));
                 return callZhipu(apiKey, fileA, fileB, prompt, false);
             }
             if (json.error) {
                 const msg = json.error.message || '';
-                if (msg.includes('overloaded') || msg.includes('temporarily')) {
-                    throw new Error('智譜伺服器目前繁忙，請稍後再試（約 1–2 分鐘後重新提交）');
-                }
-                throw new Error(`智譜 API 錯誤：${msg}`);
+                throw new Error(msg.includes('overloaded') || msg.includes('temporarily')
+                    ? '智譜伺服器目前繁忙，請稍後再試（約1–2分鐘後重新提交）'
+                    : `智譜 API 錯誤：${msg}`);
             }
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             return json.choices[0].message.content;
         }
 
-        // ── Main Comparison ───────────────────────────────────────────────────
         async function runCompare() {
             const apiKey = document.getElementById('api-key').value.trim();
-            const fileA = getFile('a');
-            const fileB = getFile('b');
+            const fileA = getFile('a'), fileB = getFile('b');
             const prompt = document.getElementById('custom-prompt').value.trim();
-
             if (!apiKey) return showToast('請先輸入並儲存 API Key', 'error');
             if (!fileA || !fileB) return showToast('請上傳文件 A 和文件 B', 'error');
 
-            // UI: loading state
             const resultZone = document.getElementById('result-zone');
             const outputBox = document.getElementById('report-output');
             const exportBtns = document.getElementById('export-buttons');
@@ -628,7 +529,6 @@
             exportBtns.style.display = 'none';
             runBtn.disabled = true;
             runBtn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>AI 深度分析中…</span>`;
-
             outputBox.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-12 gap-4 text-center">
                     <div class="w-10 h-10 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
@@ -636,20 +536,17 @@
                         <p class="text-sm font-medium text-stone-600">AI 正在閱讀並分析兩份文件</p>
                         <p class="text-xs text-stone-400 mt-1">逐字、逐句、逐額深度審查中，請稍候…</p>
                     </div>
-                </div>
-            `;
+                </div>`;
             resultZone.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             try {
                 const text = currentModel === 'gemini'
                     ? await callGemini(apiKey, fileA, fileB, prompt)
                     : await callZhipu(apiKey, fileA, fileB, prompt);
-
                 reportText = text;
                 outputBox.innerHTML = safeParse(text);
                 exportBtns.style.display = 'flex';
                 lucide.createIcons();
-
             } catch (err) {
                 outputBox.innerHTML = `
                     <div class="flex items-start gap-3 p-4 bg-red-50 rounded-xl border border-red-100">
@@ -659,8 +556,7 @@
                             <p class="text-sm text-red-600 mt-1">${escapeHtml(err.message)}</p>
                             <p class="text-xs text-red-400 mt-2">請確認 API Key 是否正確，以及所選模型是否支援該文件格式。</p>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 lucide.createIcons();
             } finally {
                 runBtn.disabled = false;
@@ -669,37 +565,23 @@
             }
         }
 
-        // ── Export ────────────────────────────────────────────────────────────
         function exportToExcel() {
             if (!reportText) return;
-            const lines = reportText.split('\n');
             const rows = [
                 ['Diffy AI 審查報告'],
                 [`生成時間：${new Date().toLocaleString('zh-TW')}`],
                 [`使用模型：${currentModel === 'gemini' ? 'Gemini 2.5 Flash' : 'GLM-4-Flash (智譜)'}`],
                 []
             ];
-
-            lines.forEach(line => {
+            reportText.split('\n').forEach(line => {
                 const clean = line.replace(/\*\*/g, '').replace(/\*/g, '').replace(/^#+\s*/, '').trim();
                 if (!clean) { rows.push([]); return; }
-                if (/^#{1,3}\s/.test(line)) {
-                    rows.push([clean]);
-                } else if (/^[-*+]\s/.test(line) || /^\d+\.\s/.test(line)) {
-                    rows.push(['', clean.replace(/^[-*+\d.]\s*/, '')]);
-                } else {
-                    rows.push([clean]);
-                }
+                if (/^#{1,3}\s/.test(line)) rows.push([clean]);
+                else if (/^[-*+]\s/.test(line) || /^\d+\.\s/.test(line)) rows.push(['', clean.replace(/^[-*+\d.]\s*/, '')]);
+                else rows.push([clean]);
             });
-
             const ws = XLSX.utils.aoa_to_sheet(rows);
             ws['!cols'] = [{ wch: 35 }, { wch: 90 }];
-
-            // Style header rows
-            ['A1', 'A2', 'A3'].forEach(ref => {
-                if (ws[ref]) ws[ref].s = { font: { bold: true } };
-            });
-
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, '審查報告');
             XLSX.writeFile(wb, `Diffy_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
@@ -709,42 +591,13 @@
             if (!reportText) return;
             const html = document.getElementById('report-output').innerHTML;
             const win = window.open('', '_blank');
-            win.document.write(`<!DOCTYPE html>
-<html lang="zh-TW"><head>
-<meta charset="UTF-8">
-<title>Diffy 審查報告</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'PingFang TC','Microsoft JhengHei','Noto Sans TC',sans-serif; max-width: 780px; margin: 0 auto; padding: 40px 32px; color: #1c1917; line-height: 1.75; font-size: 14px; }
-  .report-header { border-bottom: 2px solid #d97706; padding-bottom: 16px; margin-bottom: 28px; }
-  .report-header h1 { font-size: 20px; font-weight: 700; color: #1c1917; }
-  .report-header p { font-size: 12px; color: #78716c; margin-top: 4px; }
-  h1 { font-size: 18px; font-weight: 700; margin: 20px 0 8px; border-bottom: 1px solid #e7e5e4; padding-bottom: 6px; }
-  h2 { font-size: 15px; font-weight: 600; margin: 16px 0 6px; }
-  h3 { font-size: 13px; font-weight: 600; margin: 12px 0 4px; color: #44403c; }
-  p { margin: 6px 0; }
-  ul, ol { padding-left: 20px; margin: 6px 0; }
-  li { margin: 4px 0; }
-  strong { font-weight: 600; }
-  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-  th, td { border: 1px solid #e7e5e4; padding: 6px 10px; text-align: left; }
-  th { background: #f8f7f5; font-weight: 600; }
-  blockquote { border-left: 3px solid #d97706; padding: 4px 0 4px 12px; color: #78716c; margin: 8px 0; }
-  code { background: #f0ede8; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
-  @media print { body { padding: 20px; } }
-</style>
-</head><body>
-<div class="report-header">
-  <h1>Diffy — AI 文件差異審查報告</h1>
-  <p>生成時間：${new Date().toLocaleString('zh-TW')} &nbsp;·&nbsp; 模型：${currentModel === 'gemini' ? 'Gemini 2.5 Flash' : 'GLM-4-Flash (智譜)'}</p>
-</div>
-${html}
-</body></html>`);
+            win.document.write(`<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><title>Diffy 審查報告</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'PingFang TC','Microsoft JhengHei',sans-serif;max-width:780px;margin:0 auto;padding:40px 32px;color:#1c1917;line-height:1.75;font-size:14px}.report-header{border-bottom:2px solid #d97706;padding-bottom:16px;margin-bottom:28px}.report-header h1{font-size:20px;font-weight:700}.report-header p{font-size:12px;color:#78716c;margin-top:4px}h1{font-size:18px;font-weight:700;margin:20px 0 8px;border-bottom:1px solid #e7e5e4;padding-bottom:6px}h2{font-size:15px;font-weight:600;margin:16px 0 6px}h3{font-size:13px;font-weight:600;margin:12px 0 4px}p{margin:6px 0}ul,ol{padding-left:20px;margin:6px 0}li{margin:4px 0}strong{font-weight:600}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}th,td{border:1px solid #e7e5e4;padding:6px 10px;text-align:left}th{background:#f8f7f5;font-weight:600}blockquote{border-left:3px solid #d97706;padding:4px 0 4px 12px;color:#78716c;margin:8px 0}code{background:#f0ede8;padding:1px 4px;border-radius:3px;font-size:12px}@media print{body{padding:20px}}</style>
+</head><body><div class="report-header"><h1>Diffy — AI 文件差異審查報告</h1><p>生成時間：${new Date().toLocaleString('zh-TW')} &nbsp;·&nbsp; 模型：${currentModel === 'gemini' ? 'Gemini 2.5 Flash' : 'GLM-4-Flash (智譜)'}</p></div>${html}</body></html>`);
             win.document.close();
             setTimeout(() => { win.focus(); win.print(); }, 600);
         }
 
-        // ── Utils ─────────────────────────────────────────────────────────────
         function escapeHtml(str) {
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
@@ -760,7 +613,6 @@ ${html}
             setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
         }
 
-        // ── Boot ──────────────────────────────────────────────────────────────
         selectModel('gemini');
     </script>
 </body>
