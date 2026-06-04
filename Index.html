@@ -305,19 +305,17 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc =
             'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        marked.setOptions({
-            breaks: true,
-            gfm: true,
-            hooks: {
-                postprocess(html) {
-                    // Strip script tags and event handlers from AI-generated output
-                    return html
-                        .replace(/<script[\s\S]*?<\/script>/gi, '')
-                        .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
-                        .replace(/javascript:/gi, '');
-                }
-            }
-        });
+        marked.setOptions({ breaks: true, gfm: true });
+
+        function safeParse(text) {
+            let html = marked.parse(text);
+            // Strip script tags and event handlers from AI-generated output
+            html = html
+                .replace(/<script[\s\S]*?<\/script>/gi, '')
+                .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+                .replace(/javascript:/gi, '');
+            return html;
+        }
 
         let currentModel = 'gemini';
         let reportText = '';
@@ -648,7 +646,7 @@
                     : await callZhipu(apiKey, fileA, fileB, prompt);
 
                 reportText = text;
-                outputBox.innerHTML = marked.parse(text);
+                outputBox.innerHTML = safeParse(text);
                 exportBtns.style.display = 'flex';
                 lucide.createIcons();
 
