@@ -179,6 +179,10 @@
                             </div>
                         </div>
                         <div id="file-a-selected" class="hidden flex flex-col items-center gap-2 text-center w-full">
+                            <button type="button" onclick="event.preventDefault();event.stopPropagation();clearFile('a')"
+                                class="absolute top-2 right-2 w-6 h-6 rounded-full bg-stone-200 hover:bg-red-100 text-stone-500 hover:text-red-600 flex items-center justify-center transition-colors">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
                             <div class="w-11 h-11 rounded-full bg-amber-100 flex items-center justify-center" id="icon-a">
                                 <i data-lucide="file-check" class="w-5 h-5 text-amber-600"></i>
                             </div>
@@ -207,6 +211,10 @@
                             </div>
                         </div>
                         <div id="file-b-selected" class="hidden flex flex-col items-center gap-2 text-center w-full">
+                            <button type="button" onclick="event.preventDefault();event.stopPropagation();clearFile('b')"
+                                class="absolute top-2 right-2 w-6 h-6 rounded-full bg-stone-200 hover:bg-red-100 text-stone-500 hover:text-red-600 flex items-center justify-center transition-colors">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
                             <div class="w-11 h-11 rounded-full bg-amber-100 flex items-center justify-center" id="icon-b">
                                 <i data-lucide="file-check" class="w-5 h-5 text-amber-600"></i>
                             </div>
@@ -274,6 +282,11 @@
                         <h2 class="font-semibold text-stone-800 text-sm">審查報告</h2>
                     </div>
                     <div id="export-buttons" class="hidden gap-2 no-print">
+                        <button onclick="copyReport()"
+                            class="px-3.5 py-1.5 bg-stone-700 hover:bg-stone-800 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 shadow-sm">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            複製
+                        </button>
                         <button onclick="exportToExcel()"
                             class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 shadow-sm">
                             <i data-lucide="table-2" class="w-3.5 h-3.5"></i>
@@ -290,6 +303,22 @@
                     <div id="report-output" class="prose max-w-none"></div>
                 </div>
             </div>
+        </div>
+
+        <!-- History -->
+        <div id="history-zone" class="hidden bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 bg-amber-50 rounded-lg flex items-center justify-center">
+                        <i data-lucide="history" class="w-4 h-4 text-amber-600"></i>
+                    </div>
+                    <h2 class="font-semibold text-stone-800 text-sm">審查歷史</h2>
+                </div>
+                <button onclick="clearHistory()" class="text-xs text-stone-400 hover:text-red-600 transition-colors flex items-center gap-1">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>清除
+                </button>
+            </div>
+            <div id="history-list" class="divide-y divide-stone-100"></div>
         </div>
 
     </main>
@@ -319,6 +348,9 @@
 
         let currentModel = 'gemini';
         let reportText = '';
+        const MAX_FILE_MB = 20;                 // 單檔大小上限
+        const TOKEN_WARN = 120000;              // 估算 token 預警門檻
+        const unsavedKeys = {};                 // 暫存各模型未儲存的輸入
 
         const MODEL_CONFIG = {
             gemini: {
@@ -342,6 +374,15 @@
 
         // ── Model Selection ───────────────────────────────────────────────────
         function selectModel(model) {
+            // 切換前先暫存目前輸入框中未儲存的 Key
+            const prevInput = document.getElementById('api-key');
+            if (prevInput && currentModel) {
+                const cur = prevInput.value.trim();
+                if (cur && cur !== (localStorage.getItem(MODEL_CONFIG[currentModel].storageKey) || '')) {
+                    unsavedKeys[currentModel] = cur;
+                }
+            }
+
             currentModel = model;
             const cfg = MODEL_CONFIG[model];
 
@@ -357,10 +398,12 @@
             document.getElementById('api-key-label').textContent = cfg.label;
             document.getElementById('model-note-text').textContent = cfg.note;
 
-            // Load stored key
+            // Load stored key（優先還原未儲存的輸入）
             const saved = localStorage.getItem(cfg.storageKey) || '';
-            document.getElementById('api-key').value = saved;
-            document.getElementById('key-status').textContent = saved ? '✓ 已載入儲存的 Key' : '';
+            const restore = unsavedKeys[model] || saved;
+            document.getElementById('api-key').value = restore;
+            document.getElementById('key-status').textContent =
+                unsavedKeys[model] ? '尚未儲存' : (saved ? '✓ 已載入儲存的 Key' : '');
 
             lucide.createIcons();
         }
@@ -369,6 +412,7 @@
             const key = document.getElementById('api-key').value.trim();
             if (!key) { showToast('請輸入 API Key', 'error'); return; }
             localStorage.setItem(MODEL_CONFIG[currentModel].storageKey, key);
+            delete unsavedKeys[currentModel];
             document.getElementById('key-status').textContent = '✓ 已儲存';
             showToast('API Key 已安全儲存於本地瀏覽器', 'success');
         }
@@ -411,6 +455,7 @@
             document.getElementById(`zone-${slot}`).classList.remove('drag-active');
             const file = e.dataTransfer?.files?.[0];
             if (!file) return;
+            if (!validateFile(file)) return;
             // Assign to hidden input (read-only, so we store it)
             window[`droppedFile${slot.toUpperCase()}`] = file;
             showFileSelected(slot, file);
@@ -419,9 +464,31 @@
         function handleFileSelect(slot) {
             const file = document.getElementById(`file-${slot}`).files[0];
             if (file) {
+                if (!validateFile(file)) { document.getElementById(`file-${slot}`).value = ''; return; }
                 window[`droppedFile${slot.toUpperCase()}`] = null;
                 showFileSelected(slot, file);
             }
+        }
+
+        // 上傳即時檢查：大小上限 + 智譜不支援圖片
+        function validateFile(file) {
+            if (file.size > MAX_FILE_MB * 1048576) {
+                showToast(`檔案過大（上限 ${MAX_FILE_MB}MB）：${file.name}`, 'error');
+                return false;
+            }
+            if (currentModel === 'zhipu' && file.type.includes('image')) {
+                showToast('智譜模型暫不支援圖片，請改用 Gemini', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        // 移除已選檔案
+        function clearFile(slot) {
+            window[`droppedFile${slot.toUpperCase()}`] = null;
+            document.getElementById(`file-${slot}`).value = '';
+            document.getElementById(`file-${slot}-selected`).classList.add('hidden');
+            document.getElementById(`file-${slot}-idle`).classList.remove('hidden');
         }
 
         function getFile(slot) {
@@ -458,32 +525,39 @@
         }
 
         // ── File Content Extraction ───────────────────────────────────────────
-        const toBase64 = (file) => new Promise(resolve => {
+        const toBase64 = (file) => new Promise((resolve, reject) => {
             const r = new FileReader();
-            r.readAsDataURL(file);
             r.onload = () => resolve({ mimeType: file.type || 'application/octet-stream', base64: r.result.split(',')[1], name: file.name });
+            r.onerror = () => reject(new Error(`檔案讀取失敗（${file.name}）`));
+            r.readAsDataURL(file);
         });
 
-        const toText = (file) => new Promise(resolve => {
+        const toText = (file) => new Promise((resolve, reject) => {
             const r = new FileReader();
             r.onload = e => resolve(e.target.result);
+            r.onerror = () => reject(new Error(`檔案讀取失敗（${file.name}）`));
             r.readAsText(file, 'UTF-8');
         });
 
         async function excelToText(file) {
-            return new Promise(resolve => {
+            return new Promise((resolve, reject) => {
                 const r = new FileReader();
                 r.onload = e => {
-                    const wb = XLSX.read(e.target.result, { type: 'binary' });
-                    let out = '';
-                    wb.SheetNames.forEach(name => {
-                        out += `\n[工作表: ${name}]\n`;
-                        out += XLSX.utils.sheet_to_csv(wb.Sheets[name]);
-                        out += '\n';
-                    });
-                    resolve(out.trim());
+                    try {
+                        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                        let out = '';
+                        wb.SheetNames.forEach(name => {
+                            out += `\n[工作表: ${name}]\n`;
+                            out += XLSX.utils.sheet_to_csv(wb.Sheets[name]);
+                            out += '\n';
+                        });
+                        resolve(out.trim());
+                    } catch {
+                        reject(new Error(`Excel 解析失敗（${file.name}），請確認檔案格式正確`));
+                    }
                 };
-                r.readAsBinaryString(file);
+                r.onerror = () => reject(new Error(`檔案讀取失敗（${file.name}）`));
+                r.readAsArrayBuffer(file);
             });
         }
 
@@ -508,8 +582,8 @@
                     text += content.items.map(s => s.str).join(' ') + '\n';
                 }
                 return text.trim();
-            } catch {
-                throw new Error(`PDF 解析失敗（${file.name}），請確認文件未加密或損壞`);
+            } catch (e) {
+                throw new Error(`PDF 解析失敗（${file.name}）：${e.message || '請確認文件未加密或損壞'}`);
             }
         }
 
@@ -552,6 +626,20 @@
             return [{ text: `[文件：${file.name}（已轉換為文字）]\n${text}` }];
         }
 
+        // 帶逾時的 fetch（預設 120 秒）
+        async function fetchWithTimeout(url, opts, ms = 120000) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), ms);
+            try {
+                return await fetch(url, { ...opts, signal: ctrl.signal });
+            } catch (e) {
+                if (e.name === 'AbortError') throw new Error(`請求逾時（超過 ${ms / 1000} 秒），請改用較小的文件或稍後再試`);
+                throw new Error('網路連線失敗，請檢查網路後再試');
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
         async function callGemini(apiKey, fileA, fileB, prompt) {
             const [partsA, partsB] = await Promise.all([
                 filePartForGemini(fileA),
@@ -569,11 +657,23 @@
                     ]
                 }]
             };
-            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            const res = await fetchWithTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             const json = await res.json();
             if (json.error) throw new Error(`Gemini 錯誤：${json.error.message}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return json.candidates[0].content.parts[0].text;
+
+            const cand = json.candidates?.[0];
+            if (!cand) {
+                const blk = json.promptFeedback?.blockReason;
+                throw new Error(blk ? `內容被 Gemini 安全機制攔截（${blk}）` : 'Gemini 未回傳任何結果，請稍後再試');
+            }
+            if (cand.finishReason && cand.finishReason !== 'STOP') {
+                const reasons = { SAFETY: '內容觸發安全機制', MAX_TOKENS: '回應超出長度上限（文件過大）', RECITATION: '內容疑似重複受版權保護的資料' };
+                throw new Error(`Gemini 中止回應：${reasons[cand.finishReason] || cand.finishReason}`);
+            }
+            const text = cand.content?.parts?.[0]?.text;
+            if (!text) throw new Error('Gemini 回傳內容為空，請稍後再試');
+            return text;
         }
 
         async function callZhipu(apiKey, fileA, fileB, prompt, retry = true) {
@@ -586,7 +686,7 @@
                     content: `請比對以下兩份文件並進行深度審查分析。\n\n【文件 A：${fileA.name}】\n${tA}\n\n【文件 B：${fileB.name}】\n${tB}\n\n${prompt}\n\n請用繁體中文回答，條列式、層次分明地呈現所有差異點與專業分析。`
                 }]
             };
-            const res = await fetch(url, {
+            const res = await fetchWithTimeout(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
                 body: JSON.stringify(body)
@@ -605,7 +705,9 @@
                 throw new Error(`智譜 API 錯誤：${msg}`);
             }
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return json.choices[0].message.content;
+            const content = json.choices?.[0]?.message?.content;
+            if (!content) throw new Error('智譜回傳內容為空，請稍後再試');
+            return content;
         }
 
         // ── Main Comparison ───────────────────────────────────────────────────
@@ -617,6 +719,13 @@
 
             if (!apiKey) return showToast('請先輸入並儲存 API Key', 'error');
             if (!fileA || !fileB) return showToast('請上傳文件 A 和文件 B', 'error');
+
+            // 粗略 token 估算（UTF-8 位元組約 3 bytes/CJK 字，再 ÷ 比值）預警
+            const estTokens = Math.round((fileA.size + fileB.size) / 3);
+            if (estTokens > TOKEN_WARN) {
+                const ok = confirm(`預估內容約 ${estTokens.toLocaleString()} tokens，可能超出模型上限導致截斷或失敗。\n仍要繼續嗎？`);
+                if (!ok) return;
+            }
 
             // UI: loading state
             const resultZone = document.getElementById('result-zone');
@@ -648,6 +757,7 @@
                 reportText = text;
                 outputBox.innerHTML = safeParse(text);
                 exportBtns.style.display = 'flex';
+                saveToHistory(fileA.name, fileB.name, text);
                 lucide.createIcons();
 
             } catch (err) {
@@ -760,8 +870,75 @@ ${html}
             setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
         }
 
+        // ── Copy Report ───────────────────────────────────────────────────────
+        async function copyReport() {
+            if (!reportText) return;
+            try {
+                await navigator.clipboard.writeText(reportText);
+                showToast('報告已複製到剪貼板', 'success');
+            } catch {
+                showToast('複製失敗，請手動選取', 'error');
+            }
+        }
+
+        // ── History（localStorage 存最近 5 次）────────────────────────────────
+        const HISTORY_KEY = 'diffy_history';
+
+        function loadHistory() {
+            try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+            catch { return []; }
+        }
+
+        function saveToHistory(nameA, nameB, text) {
+            const list = loadHistory();
+            list.unshift({
+                id: Date.now(),
+                model: currentModel === 'gemini' ? 'Gemini 2.5 Flash' : 'GLM-4-Flash',
+                files: `${nameA} ↔ ${nameB}`,
+                time: new Date().toLocaleString('zh-TW'),
+                text
+            });
+            try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 5))); } catch {}
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = loadHistory();
+            const zone = document.getElementById('history-zone');
+            const box = document.getElementById('history-list');
+            if (!list.length) { zone.classList.add('hidden'); return; }
+            zone.classList.remove('hidden');
+            box.innerHTML = list.map(h => `
+                <button onclick="viewHistory(${h.id})" class="w-full text-left px-6 py-3.5 hover:bg-stone-50 transition-colors flex items-center justify-between gap-3 group">
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium text-stone-700 truncate">${escapeHtml(h.files)}</p>
+                        <p class="text-xs text-stone-400 mt-0.5">${escapeHtml(h.model)} · ${escapeHtml(h.time)}</p>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300 group-hover:text-amber-500 flex-shrink-0"></i>
+                </button>`).join('');
+            lucide.createIcons();
+        }
+
+        function viewHistory(id) {
+            const item = loadHistory().find(h => h.id === id);
+            if (!item) return;
+            reportText = item.text;
+            document.getElementById('result-zone').classList.remove('hidden');
+            document.getElementById('report-output').innerHTML = safeParse(item.text);
+            document.getElementById('export-buttons').style.display = 'flex';
+            lucide.createIcons();
+            document.getElementById('result-zone').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function clearHistory() {
+            if (!confirm('確定要清除所有審查歷史嗎？')) return;
+            localStorage.removeItem(HISTORY_KEY);
+            renderHistory();
+        }
+
         // ── Boot ──────────────────────────────────────────────────────────────
         selectModel('gemini');
+        renderHistory();
     </script>
 </body>
 </html>
