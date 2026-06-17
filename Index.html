@@ -13,6 +13,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/turndown-plugin-gfm@1.0.2/dist/turndown-plugin-gfm.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -561,14 +563,66 @@
             });
         }
 
+        // HTML → Markdown（含表格），忽略內嵌圖片以避免 base64 灌爆文字
+        function htmlToMarkdown(html) {
+            const td = new TurndownService({ headingStyle: 'atx', hr: '---' });
+            if (window.turndownPluginGfm) td.use(window.turndownPluginGfm.gfm);
+            td.remove('img');
+            return td.turndown(html);
+        }
+
         async function docxToText(file) {
             try {
                 const buf = await file.arrayBuffer();
-                const result = await mammoth.extractRawText({ arrayBuffer: buf });
-                return result.value.trim();
+                // 轉 HTML（保留標題/表格/清單結構），忽略圖片本體
+                const result = await mammoth.convertToHtml(
+                    { arrayBuffer: buf },
+                    { convertImage: mammoth.images.imgElement(() => Promise.resolve({})) }
+                );
+                return htmlToMarkdown(result.value).trim();
             } catch {
                 throw new Error(`Word 文件解析失敗（${file.name}），請確認文件格式正確`);
             }
+        }
+
+        // 按 Y 座標分行、按 X 間距偵測欄位邊界，盡量還原表格排版
+        function reconstructPdfLayout(items) {
+            if (!items.length) return '';
+            const Y_TOLERANCE = 3;
+            const COLUMN_GAP = 12;
+
+            const sorted = [...items].sort((a, b) => b.transform[5] - a.transform[5]);
+            const lines = [];
+            let line = [];
+            let lineY = null;
+            for (const it of sorted) {
+                const y = it.transform[5];
+                if (lineY === null || Math.abs(y - lineY) <= Y_TOLERANCE) {
+                    line.push(it);
+                    lineY = lineY === null ? y : lineY;
+                } else {
+                    lines.push(line);
+                    line = [it];
+                    lineY = y;
+                }
+            }
+            if (line.length) lines.push(line);
+
+            return lines.map(items => {
+                items.sort((a, b) => a.transform[4] - b.transform[4]);
+                let out = '';
+                let lastEndX = null;
+                for (const it of items) {
+                    const x = it.transform[4];
+                    if (lastEndX !== null) {
+                        const gap = x - lastEndX;
+                        out += gap > COLUMN_GAP ? ' | ' : (gap > 1 ? ' ' : '');
+                    }
+                    out += it.str;
+                    lastEndX = x + (it.width || it.str.length * 5);
+                }
+                return out;
+            }).join('\n');
         }
 
         async function pdfToText(file) {
@@ -579,7 +633,7 @@
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
                     const content = await page.getTextContent();
-                    text += content.items.map(s => s.str).join(' ') + '\n';
+                    text += `\n[第 ${i} 頁]\n` + reconstructPdfLayout(content.items) + '\n';
                 }
                 return text.trim();
             } catch (e) {
