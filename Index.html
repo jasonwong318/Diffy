@@ -149,6 +149,20 @@
                     <p class="mt-1.5 text-xs text-stone-400">API Key 僅儲存於本地瀏覽器，不會上傳至任何伺服器</p>
                 </div>
 
+                <!-- Advanced: editable model ID -->
+                <details class="group">
+                    <summary class="text-xs font-medium text-stone-500 cursor-pointer select-none flex items-center gap-1.5 hover:text-stone-700 transition-colors">
+                        <i data-lucide="settings-2" class="w-3.5 h-3.5"></i>
+                        進階：模型 ID
+                    </summary>
+                    <div class="mt-2.5">
+                        <input type="text" id="model-id"
+                            class="w-full px-3.5 py-2.5 border border-stone-200 rounded-xl text-sm font-mono bg-stone-50 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent focus:bg-white transition-all"
+                            oninput="saveModelId()" placeholder="例如 gemini-2.5-flash">
+                        <p class="mt-1.5 text-xs text-stone-400">供應商推出新模型時，可在此填入最新 ID（如 Google AI Studio / 智譜平台所示）。留空則用預設。</p>
+                    </div>
+                </details>
+
             </div>
         </div>
 
@@ -176,8 +190,8 @@
                                 <i data-lucide="file-up" class="w-5 h-5 text-stone-400"></i>
                             </div>
                             <div>
-                                <p class="text-sm font-semibold text-stone-600">文件 A</p>
-                                <p class="text-xs text-stone-400 mt-0.5">拖放或點擊上傳</p>
+                                <p class="text-sm font-semibold text-stone-600">原始版 Original</p>
+                                <p class="text-xs text-stone-400 mt-0.5">基準版本 · 拖放或點擊上傳</p>
                             </div>
                         </div>
                         <div id="file-a-selected" class="hidden flex flex-col items-center gap-2 text-center w-full">
@@ -208,8 +222,8 @@
                                 <i data-lucide="file-up" class="w-5 h-5 text-stone-400"></i>
                             </div>
                             <div>
-                                <p class="text-sm font-semibold text-stone-600">文件 B</p>
-                                <p class="text-xs text-stone-400 mt-0.5">拖放或點擊上傳</p>
+                                <p class="text-sm font-semibold text-stone-600">修訂版 Revised</p>
+                                <p class="text-xs text-stone-400 mt-0.5">對照版本 · 拖放或點擊上傳</p>
                             </div>
                         </div>
                         <div id="file-b-selected" class="hidden flex flex-col items-center gap-2 text-center w-full">
@@ -259,6 +273,18 @@
                         class="px-3 py-1.5 bg-stone-100 hover:bg-amber-100 text-stone-600 hover:text-amber-700 rounded-full text-xs font-medium transition-colors">
                         🛡️ 風險審計
                     </button>
+                </div>
+
+                <!-- Analysis stance -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs text-stone-400">分析立場：</span>
+                    <select id="stance"
+                        class="px-3 py-1.5 border border-stone-200 rounded-lg text-xs text-stone-600 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all">
+                        <option value="">中立（客觀比對）</option>
+                        <option value="甲方">站在甲方立場</option>
+                        <option value="乙方">站在乙方立場</option>
+                    </select>
+                    <span class="text-xs text-stone-400">合同審查時，AI 會偏重該方的利弊分析</span>
                 </div>
 
                 <textarea id="custom-prompt" rows="4"
@@ -358,14 +384,24 @@
             gemini: {
                 label: 'Gemini API Key',
                 note: '支援 PDF、圖片原生分析；Excel、Word 自動轉換文字後送入',
-                storageKey: 'diffy_gemini_key'
+                storageKey: 'diffy_gemini_key',
+                modelStorageKey: 'diffy_gemini_model',
+                defaultModelId: 'gemini-2.5-flash'
             },
             zhipu: {
                 label: '智譜 API Key',
                 note: '支援 Excel、Word、PDF（均提取文字後送入）；圖片格式暫不支援',
-                storageKey: 'diffy_zhipu_key'
+                storageKey: 'diffy_zhipu_key',
+                modelStorageKey: 'diffy_zhipu_model',
+                defaultModelId: 'glm-4-flash'
             }
         };
+
+        // 取得目前模型 ID（用戶可於進階欄位覆寫）
+        function getModelId() {
+            const cfg = MODEL_CONFIG[currentModel];
+            return (localStorage.getItem(cfg.modelStorageKey) || '').trim() || cfg.defaultModelId;
+        }
 
         const PRESETS = {
             finance: '請幫我深度交叉比對這兩份財務報表，重點找出：\n1. 數字不一致之處及金額差異（請列出具體科目及金額）\n2. 科目分類的變化\n3. 異常數值或不合理波動\n4. 可能的錯誤或風險跡象\n\n請以表格形式呈現主要差異，並附上說明。',
@@ -407,7 +443,21 @@
             document.getElementById('key-status').textContent =
                 unsavedKeys[model] ? '尚未儲存' : (saved ? '✓ 已載入儲存的 Key' : '');
 
+            // 載入該模型的自訂 ID（若有），並以預設值作 placeholder
+            const idInput = document.getElementById('model-id');
+            if (idInput) {
+                idInput.value = localStorage.getItem(cfg.modelStorageKey) || '';
+                idInput.placeholder = `預設：${cfg.defaultModelId}`;
+            }
+
             lucide.createIcons();
+        }
+
+        function saveModelId() {
+            const val = document.getElementById('model-id').value.trim();
+            const key = MODEL_CONFIG[currentModel].modelStorageKey;
+            if (val) localStorage.setItem(key, val);
+            else localStorage.removeItem(key);
         }
 
         function saveApiKey() {
@@ -694,20 +744,32 @@
             }
         }
 
+        // 組合最終指令：使用者指令 + 方向性框架 + 分析立場
+        function buildInstruction(prompt) {
+            const stance = (document.getElementById('stance')?.value || '').trim();
+            let out = prompt + '\n\n';
+            out += '【比對方向】請以「原始版 Original」為基準，明確標示「修訂版 Revised」相對其的：新增、刪除、修改之處，並逐字對照關鍵原文。';
+            if (stance) {
+                out += `\n【分析立場】請特別站在「${stance}」的角度，評估每項變動對${stance}的有利／不利影響及風險。`;
+            }
+            out += '\n\n請用繁體中文回答，條列式、層次分明地呈現所有差異點與專業分析。';
+            return out;
+        }
+
         async function callGemini(apiKey, fileA, fileB, prompt) {
             const [partsA, partsB] = await Promise.all([
                 filePartForGemini(fileA),
                 filePartForGemini(fileB)
             ]);
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelId()}:generateContent?key=${apiKey}`;
             const body = {
                 contents: [{
                     parts: [
-                        { text: `以下是文件 A（${fileA.name}）：` },
+                        { text: `以下是【原始版 Original】（${fileA.name}），作為比對基準：` },
                         ...partsA,
-                        { text: `以下是文件 B（${fileB.name}）：` },
+                        { text: `以下是【修訂版 Revised】（${fileB.name}），請以原始版為基準找出其變動：` },
                         ...partsB,
-                        { text: `${prompt}\n\n請用繁體中文回答，條列式、層次分明地呈現所有差異點與專業分析。` }
+                        { text: buildInstruction(prompt) }
                     ]
                 }]
             };
@@ -734,10 +796,10 @@
             const [tA, tB] = await Promise.all([fileToText(fileA), fileToText(fileB)]);
             const url = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
             const body = {
-                model: 'glm-4-flash',
+                model: getModelId(),
                 messages: [{
                     role: 'user',
-                    content: `請比對以下兩份文件並進行深度審查分析。\n\n【文件 A：${fileA.name}】\n${tA}\n\n【文件 B：${fileB.name}】\n${tB}\n\n${prompt}\n\n請用繁體中文回答，條列式、層次分明地呈現所有差異點與專業分析。`
+                    content: `請以【原始版 Original】為基準，找出【修訂版 Revised】相對其的變動並深度審查。\n\n【原始版 Original：${fileA.name}】\n${tA}\n\n【修訂版 Revised：${fileB.name}】\n${tB}\n\n${buildInstruction(prompt)}`
                 }]
             };
             const res = await fetchWithTimeout(url, {
@@ -840,7 +902,7 @@
             const rows = [
                 ['Diffy AI 審查報告'],
                 [`生成時間：${new Date().toLocaleString('zh-TW')}`],
-                [`使用模型：${currentModel === 'gemini' ? 'Gemini 2.5 Flash' : 'GLM-4-Flash (智譜)'}`],
+                [`使用模型：${currentModel === 'gemini' ? 'Gemini' : '智譜'}（${getModelId()}）`],
                 []
             ];
 
@@ -900,7 +962,7 @@
 </head><body>
 <div class="report-header">
   <h1>Diffy — AI 文件差異審查報告</h1>
-  <p>生成時間：${new Date().toLocaleString('zh-TW')} &nbsp;·&nbsp; 模型：${currentModel === 'gemini' ? 'Gemini 2.5 Flash' : 'GLM-4-Flash (智譜)'}</p>
+  <p>生成時間：${new Date().toLocaleString('zh-TW')} &nbsp;·&nbsp; 模型：${currentModel === 'gemini' ? 'Gemini' : '智譜'}（${getModelId()}）</p>
 </div>
 ${html}
 </body></html>`);
@@ -947,7 +1009,7 @@ ${html}
             const list = loadHistory();
             list.unshift({
                 id: Date.now(),
-                model: currentModel === 'gemini' ? 'Gemini 2.5 Flash' : 'GLM-4-Flash',
+                model: (currentModel === 'gemini' ? 'Gemini' : '智譜') + `（${getModelId()}）`,
                 files: `${nameA} ↔ ${nameB}`,
                 time: new Date().toLocaleString('zh-TW'),
                 text
